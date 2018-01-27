@@ -140,16 +140,20 @@ class KinectSupport:
         if self.current_tracked_body != -1:
             body = bodies[self.current_tracked_body]
             if not body:
+                print ("Lost body")
                 return self.find_closest_body(bodies)
 
             if not body.is_tracked:
+                print("Lost body tracking")
                 return self.find_closest_body(bodies)
 
             if not body.joints:
+                print("Lost body joints")
                 return self.find_closest_body(bodies)
 
             torso_joint = body.joints[TORSO_JOINT]
             if torso_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
+                print("Lost body torso")
                 return self.find_closest_body(bodies)
 
             # this body is still visible so stick to it
@@ -197,7 +201,7 @@ class KinectSupport:
         return closest_body
 
     def update_bodies(self):
-        closest_body = self.find_closest_body(self._bodies.bodies)
+        closest_body = self.find_body(self._bodies.bodies)
         if not closest_body:
             return
 
