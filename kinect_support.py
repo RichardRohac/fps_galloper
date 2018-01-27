@@ -12,6 +12,7 @@ LEFT_FOOT_JOINT = PyKinectV2.JointType_AnkleLeft
 RIGHT_FOOT_JOINT = PyKinectV2.JointType_AnkleRight
 LEFT_HAND_JOINT = PyKinectV2.JointType_HandTipLeft
 HEAD_JOINT = PyKinectV2.JointType_Head
+TORSO_JOINT = PyKinectV2.JointType_SpineShoulder
 
 if sys.hexversion >= 0x03000000:
     import _thread as thread
@@ -147,15 +148,8 @@ class KinectSupport:
             if not body.joints:
                 return self.find_closest_body(bodies)
 
-            head_joint = body.joints[HEAD_JOINT]
-            if head_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
-                return self.find_closest_body(bodies)
-
-            # also skip bodies without feet
-            if body.joints[LEFT_FOOT_JOINT].TrackingState == PyKinectV2.TrackingState_NotTracked:
-                return self.find_closest_body(bodies)
-
-            if body.joints[RIGHT_FOOT_JOINT].TrackingState == PyKinectV2.TrackingState_NotTracked:
+            torso_joint = body.joints[TORSO_JOINT]
+            if torso_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
                 return self.find_closest_body(bodies)
 
             # this body is still visible so stick to it
@@ -178,8 +172,8 @@ class KinectSupport:
             if not body.joints:
                 continue
 
-            head_joint = body.joints[HEAD_JOINT]
-            if head_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
+            torso_joint = body.joints[TORSO_JOINT]
+            if torso_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
                 continue
 
             # also skip bodies without feet
@@ -189,10 +183,10 @@ class KinectSupport:
             if body.joints[RIGHT_FOOT_JOINT].TrackingState == PyKinectV2.TrackingState_NotTracked:
                 continue
 
-            head_point = head_joint.Position
-            distanceZ = head_point.x * head_point.x + \
-                        head_point.y * head_point.y + \
-                        head_point.z * head_point.z
+            torso_point = torso_joint.Position
+            distanceZ = torso_point.x * torso_point.x + \
+                        torso_point.y * torso_point.y + \
+                        torso_point.z * torso_point.z
             if closest_z <= distanceZ:
                 continue
 
@@ -215,7 +209,6 @@ class KinectSupport:
         input_sim = InputSimulator()
 
         self.deka = deque(maxlen=10)
-
         last_hand_pos = (0, 0)
 
         while not self._done:
