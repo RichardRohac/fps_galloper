@@ -1,8 +1,8 @@
 from collections import deque
 
 
-WINDOW_SIZE = 60
-PIXEL_THRESHOLD = 10
+WINDOW_SIZE = 20
+PIXEL_THRESHOLD = 25
 SWITCH_NUM = 2
 class GallopTracker(object):
     def __init__(self):
@@ -11,7 +11,7 @@ class GallopTracker(object):
     def addNoha(self,y_left, y_right):
         self.window.append(y_left - y_right)
     def failedNoha(self):
-        print ("Noha failed")
+        #print ("Noha failed")
         self.window.append(0)
 
     def isGalloping(self):

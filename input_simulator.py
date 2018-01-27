@@ -1,8 +1,6 @@
 import ctypes
 import time
 
-from kinect_support import KinectSupport
-
 SendInput = ctypes.windll.user32.SendInput
 
 PUL = ctypes.POINTER(ctypes.c_ulong)
@@ -77,15 +75,3 @@ class InputSimulator:
             self.PressKeyForTime(self.KEY_FORWARD, 0.01)
             self.MouseMove(5, 5)
             self.PressKeyForTime(self.KEY_SHOOT, 1.0)
-
-
-        pass
-
-
-def main():
-    kinect_visualiser = KinectSupport()
-    kinect_visualiser.run()
-
-
-if __name__ == "__main__":
-    main()
