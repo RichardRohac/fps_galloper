@@ -10,6 +10,9 @@ class GallopTracker(object):
 
     def addNoha(self,y_left, y_right):
         self.window.append(y_left - y_right)
+    def failedNoha(self):
+        print ("Noha failed")
+        self.window.append(0)
 
     def isGalloping(self):
         if not len(self.window):

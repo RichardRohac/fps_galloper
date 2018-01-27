@@ -4,6 +4,11 @@ from pykinect2 import PyKinectRuntime
 import ctypes
 import pygame
 import sys
+from GallopTracker import GallopTracker
+
+
+LEFT_FOOT_JOINT = PyKinectV2.JointType_AnkleLeft
+RIGHT_FOOT_JOINT = PyKinectV2.JointType_AnkleRight
 
 if sys.hexversion >= 0x03000000:
     import _thread as thread
@@ -22,7 +27,7 @@ SKELETON_COLORS = [pygame.color.THECOLORS["red"],
 class KinectSupport:
     def __init__(self):
         pygame.init()
-
+        self.gallop_tracker = GallopTracker()
         self._clock = pygame.time.Clock()
 
         self._infoObject = pygame.display.Info()
@@ -51,6 +56,7 @@ class KinectSupport:
         # ok, at least one is good
         start = (jointPoints[joint0].x, jointPoints[joint0].y)
         end = (jointPoints[joint1].x, jointPoints[joint1].y)
+
 
         try:
             pygame.draw.line(self._frame_surface, color, start, end, 8)
@@ -111,6 +117,21 @@ class KinectSupport:
         del address
         target_surface.unlock()
 
+    def update_galloper(self, joints, jointPoints):
+        lavaNohaState = joints[LEFT_FOOT_JOINT].TrackingState;
+        pravaNohaState = joints[RIGHT_FOOT_JOINT].TrackingState;
+        # both joints are not tracked
+        if (lavaNohaState == PyKinectV2.TrackingState_NotTracked) or (pravaNohaState == PyKinectV2.TrackingState_NotTracked):
+            self.gallop_tracker.nohaFailed()
+            return
+
+        # both joints are not *really* tracked
+        if (lavaNohaState == PyKinectV2.TrackingState_Inferred) and (pravaNohaState == PyKinectV2.TrackingState_Inferred):
+            self.gallop_tracker.nohaFailed()
+            return
+        self.gallop_tracker.addNoha(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
+
+
     def run(self):
         while not self._done:
             # --- Main event loop
@@ -145,6 +166,7 @@ class KinectSupport:
                     joints = body.joints
                     # convert joint coordinates to color space
                     joint_points = self._kinect.body_joints_to_color_space(joints)
+                    self.updateGalloper(joints, jointPoints)
                     self.draw_body(joints, joint_points, SKELETON_COLORS[i])
 
             # --- copy back buffer surface pixels to the screen, resize it if needed and keep aspect ratio
