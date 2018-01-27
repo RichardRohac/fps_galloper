@@ -8,6 +8,8 @@ from GallopTracker import GallopTracker
 from input_simulator import InputSimulator
 from collections import deque
 
+from key_timers import KeyTimers
+
 LEFT_FOOT_JOINT = PyKinectV2.JointType_AnkleLeft
 RIGHT_FOOT_JOINT = PyKinectV2.JointType_AnkleRight
 LEFT_HAND_JOINT = PyKinectV2.JointType_HandTipLeft
@@ -45,6 +47,8 @@ class KinectSupport:
         self._frame_surface = pygame.Surface((self._kinect.color_frame_desc.Width, self._kinect.color_frame_desc.Height), 0, 32)
         self._bodies = None
         self.current_tracked_body = -1
+        self.input_sim = InputSimulator()
+        self.key_timers = KeyTimers(self.input_sim)
 
     def draw_body_bone(self, joints, jointPoints, color, joint0, joint1):
         joint0State = joints[joint0].TrackingState;
@@ -164,6 +168,7 @@ class KinectSupport:
     def find_closest_body(self, bodies):
         closest_z = float("inf")
         closest_body = None
+        self.gallop_tracker.reset()
 
         for i in range(0, self._kinect.max_body_count):
             body = bodies[i]
@@ -210,8 +215,6 @@ class KinectSupport:
         self.draw_body(closest_body.joints, joint_points, SKELETON_COLORS[self.current_tracked_body])
 
     def run(self):
-        input_sim = InputSimulator()
-
         self.deka = deque(maxlen=10)
         last_hand_pos = (0, 0)
 
@@ -227,8 +230,13 @@ class KinectSupport:
 
             # --- Game logic should go here
 
-            if (self.gallop_tracker.isGalloping()):
-                input_sim.PressKeyForTime(input_sim.KEY_FORWARD, 0.01)
+            # update input
+
+            if self.gallop_tracker.isGalloping():
+                self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.01)
+
+            # walking / running
+            self.key_timers.update_keys()
 
             # --- Getting frames and drawing
             # --- Woohoo! We've got a color frame! Let's fill out back buffer surface with frame's data

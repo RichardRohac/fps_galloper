@@ -57,21 +57,3 @@ class InputSimulator:
         ii_.mi = MouseInput(dx, dy, 0, 0x0001, 0, ctypes.pointer(extra))
         x = Input(ctypes.c_ulong(0), ii_);
         ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
-
-    def PressKeyForTime(self, hexKeyCode, time_for_press):
-        t_end = time.time() + time_for_press
-        self.PressKey(hexKeyCode)
-        while time.time() < t_end:
-            pass
-
-        self.ReleaseKey(hexKeyCode)
-
-    def Demo(self):
-
-        time.sleep(5)
-
-        t_end = time.time() + 10
-        while time.time() < t_end:
-            self.PressKeyForTime(self.KEY_FORWARD, 0.01)
-            self.MouseMove(5, 5)
-            self.PressKeyForTime(self.KEY_SHOOT, 1.0)
