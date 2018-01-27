@@ -1,2 +1,4 @@
 pykinect2
 pygame
+aiohttp
+python-socketio

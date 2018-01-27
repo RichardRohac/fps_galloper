@@ -7,6 +7,7 @@ import sys
 from GallopTracker import GallopTracker
 from input_simulator import InputSimulator
 from collections import deque
+import math
 
 from key_timers import KeyTimers
 
@@ -49,6 +50,11 @@ class KinectSupport:
         self.current_tracked_body = -1
         self.input_sim = InputSimulator()
         self.key_timers = KeyTimers(self.input_sim)
+        self.torso_deka = deque(maxlen=60)
+        self.last_hand_pos = (0, 0)
+        self.deka = deque(maxlen=11)
+        for i in range(0, 11):
+            self.deka.append((0,0))
 
     def draw_body_bone(self, joints, jointPoints, color, joint0, joint1):
         joint0State = joints[joint0].TrackingState;
@@ -144,20 +150,16 @@ class KinectSupport:
         if self.current_tracked_body != -1:
             body = bodies[self.current_tracked_body]
             if not body:
-                print ("Lost body")
                 return self.find_closest_body(bodies)
 
             if not body.is_tracked:
-                print("Lost body tracking")
                 return self.find_closest_body(bodies)
 
             if not body.joints:
-                print("Lost body joints")
                 return self.find_closest_body(bodies)
 
             torso_joint = body.joints[TORSO_JOINT]
             if torso_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
-                print("Lost body torso")
                 return self.find_closest_body(bodies)
 
             # this body is still visible so stick to it
@@ -205,19 +207,37 @@ class KinectSupport:
 
         return closest_body
 
+    def special_movements(self, body):
+        torso_joint = body.joints[TORSO_JOINT]
+        #if torso_joint.TrackingState == PyKinectV2.TrackingState_NotTracked:
+        #    continue
+
+
     def update_bodies(self):
         closest_body = self.find_body(self._bodies.bodies)
         if not closest_body:
             return
 
         joint_points = self._kinect.body_joints_to_color_space(closest_body.joints)
+
+        left_hand_to_torso = joint_points[TORSO_JOINT].x - joint_points[LEFT_FOOT_JOINT].x
+        left_hand_x_fix = joint_points[LEFT_HAND_JOINT].x + left_hand_to_torso
+
+        cur_delta = (int(round(left_hand_x_fix - self.last_hand_pos[0])),
+                     int(round(joint_points[LEFT_HAND_JOINT].y - self.last_hand_pos[1])))
+
+        self.input_sim.MouseMove(self.deka[6][0], self.deka[6][1])
+
+        self.deka.append(cur_delta)
+
+        self.last_hand_pos = (left_hand_x_fix, joint_points[LEFT_HAND_JOINT].y)
+        # special_movements(body)
+
         self.update_galloper(closest_body.joints, joint_points)
+
         self.draw_body(closest_body.joints, joint_points, SKELETON_COLORS[self.current_tracked_body])
 
     def run(self):
-        self.deka = deque(maxlen=10)
-        last_hand_pos = (0, 0)
-
         while not self._done:
             # --- Main event loop
             for event in pygame.event.get():
@@ -304,6 +324,7 @@ class KinectSupport:
         pygame.quit()
 
 def main():
+
     kinect_visualiser = KinectSupport()
     kinect_visualiser.run()
 
