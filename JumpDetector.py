@@ -18,14 +18,14 @@ class JumpDetector(object):
     def deactivate(self):
         self.enabled = False
 
-    def addNoha(self, y_left, y_right):
-        self.window.append(min(y_left, y_right))
+    def addFeet(self, y_left, y_right):
+        self.window.append(max(y_left, y_right))
         self.jump = self.enabled and (self.window[0] - self.window[-1] > PIXEL_THRESHOLD)
         if not self.jump:
             self.checked = False
 
-    def failedNoha(self):
-        print(".", end='')
+    def failedFeet(self):
+        # Currently unused
         self.window.append(self.window[-1])
 
     def hasJumped(self):

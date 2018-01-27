@@ -147,7 +147,7 @@ class KinectSupport:
             self.gallop_tracker.failedNoha()
             return
         self.gallop_tracker.addNoha(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
-        self.jump.addNoha(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
+        self.jump.addFeet(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
 
     def find_body(self, bodies):
         if self.current_tracked_body != -1:
@@ -261,9 +261,7 @@ class KinectSupport:
                 self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.01)
 
             if self.jump.hasJumped():
-                self.jump.counter += 1
-                print("Jumped", self.jump.counter)
-                #self.key_timers.press_key_for_time(self.input_sim.KEY_JUMP, 0.01)
+                self.key_timers.press_key_for_time(self.input_sim.KEY_JUMP, 0.01)
 
             # walking / running
             self.key_timers.update_keys()
