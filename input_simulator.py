@@ -36,6 +36,7 @@ class Input(ctypes.Structure):
 class InputSimulator:
     KEY_FORWARD = 0x11
     KEY_SHOOT = 0x1C
+    KEY_JUMP = 0x39
 
     def PressKey(self, hexKeyCode):
         extra = ctypes.c_ulong(0)
