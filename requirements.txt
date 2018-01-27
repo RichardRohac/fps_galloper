@@ -1,0 +1,2 @@
+pykinect2
+pygame
