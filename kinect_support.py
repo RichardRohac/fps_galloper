@@ -220,7 +220,7 @@ class KinectSupport:
 
         joint_points = self._kinect.body_joints_to_color_space(closest_body.joints)
 
-        left_hand_to_torso = joint_points[TORSO_JOINT].x - joint_points[LEFT_FOOT_JOINT].x
+        left_hand_to_torso = abs(joint_points[TORSO_JOINT].x - joint_points[LEFT_FOOT_JOINT].x)
         left_hand_x_fix = joint_points[LEFT_HAND_JOINT].x + left_hand_to_torso
 
         cur_delta = (int(round(left_hand_x_fix - self.last_hand_pos[0])),

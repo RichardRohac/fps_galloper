@@ -45,13 +45,10 @@ class Server:
 
     def kf_filter(self, observation):
         self.kf.input_latest_noisy_measurement(observation)
-        print(observation)
         if self.cur_heading:
-            if (observation > 75):
-                delta = math.asin(math.sin(observation*DEG_TO_RAD)*math.cos(self.cur_heading*DEG_TO_RAD)-math.cos(observation*DEG_TO_RAD)*math.sin(self.cur_heading*DEG_TO_RAD))
-                print("Received delta: ", observation, " and capped: ", delta * (180/math.pi))
-                capped_delta = delta * (180/math.pi)
-                #self.input_manager.MouseMove(int(capped_delta)*10, 0)
+            delta = math.asin(math.sin(observation*DEG_TO_RAD)*math.cos(self.cur_heading*DEG_TO_RAD)-math.cos(observation*DEG_TO_RAD)*math.sin(self.cur_heading*DEG_TO_RAD))
+            capped_delta = delta * (180/math.pi)
+            self.input_manager.MouseMove(int(capped_delta)*10, 0)
 
         self.cur_heading = observation
 
