@@ -1,7 +1,7 @@
 import ctypes
 import time
-from pykinect2 import PyKinectV2
-from pykinect2 import PyKinectRuntime
+
+from kinect_support import KinectSupport
 
 SendInput = ctypes.windll.user32.SendInput
 
@@ -83,7 +83,9 @@ class InputSimulator:
 
 
 def main():
-    InputSimulator().Demo()
+    kinect_visualiser = KinectSupport()
+    kinect_visualiser.run()
+
 
 if __name__ == "__main__":
     main()
