@@ -57,5 +57,5 @@ class InputSimulator:
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
         ii_.mi = MouseInput(dx, dy, 0, 0x0001, 0, ctypes.pointer(extra))
-        x = Input(ctypes.c_ulong(0), ii_);
+        x = Input(ctypes.c_ulong(0), ii_)
         ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))

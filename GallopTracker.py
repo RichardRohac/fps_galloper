@@ -1,8 +1,8 @@
 from collections import deque
 
 
-WINDOW_SIZE = 20
-PIXEL_THRESHOLD = 20
+WINDOW_SIZE = 60
+PIXEL_THRESHOLD = 25
 SWITCH_NUM = 2
 class GallopTracker(object):
     def __init__(self):

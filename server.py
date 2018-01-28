@@ -1,4 +1,5 @@
 import threading
+from collections import deque
 
 from aiohttp import web
 import asyncio
@@ -48,20 +49,35 @@ class Server:
         self.sio.on('heading')(self.heading)
         self.sio.on('aimEnable')(self.aimEnable)
         self.sio.on('aimDisable')(self.aimDisable)
+        self.prev_delta = deque(maxlen=6)
+        for i in range(0, 6):
+            self.prev_delta.append(0)
 
         thread = threading.Thread(target=self.run)
         thread.daemon = True
         thread.start()
 
     def kf_filter(self, observation):
-        self.kf.input_latest_noisy_measurement(observation)
-        if self.cur_heading:
-            delta = math.asin(math.sin(observation*DEG_TO_RAD)*math.cos(self.cur_heading*DEG_TO_RAD)-math.cos(observation*DEG_TO_RAD)*math.sin(self.cur_heading*DEG_TO_RAD))
-            capped_delta = delta * (180/math.pi)
-            if myglobals.enable_kinect_hand is False:
-                self.input_manager.MouseMove(int(capped_delta)*10, 0)
+        if myglobals.enable_kinect_hand is True:
+            return
 
-        self.cur_heading = observation
+        #self.kf.input_latest_noisy_measurement(observation)
+        pred = observation #self.kf.get_latest_estimated_measurement()
+        if self.cur_heading:
+            delta = math.asin(math.sin(pred*DEG_TO_RAD)*math.cos(self.cur_heading*DEG_TO_RAD)-math.cos(pred*DEG_TO_RAD)*math.sin(self.cur_heading*DEG_TO_RAD))
+            capped_delta = delta * (180/math.pi)
+            #if abs(capped_delta) > 1:
+            #    print('Delta heading: ' + str(capped_delta))
+
+            cur_delta = int(capped_delta)*30
+            self.prev_delta.append(cur_delta)
+
+            avg = 0
+            for i in range(0, 6):
+                avg += self.prev_delta[i]
+
+            self.input_manager.MouseMove(int(avg/6), 0)
+        self.cur_heading = pred
 
     def logdata(self, acc):
         if len(self.measurements) < 10:
@@ -86,6 +102,7 @@ class Server:
 
     async def aimDisable(self, aid):
         myglobals.enable_kinect_hand = True
+        #self.cur_heading = None
 
     def run(self):
         loop = asyncio.new_event_loop()

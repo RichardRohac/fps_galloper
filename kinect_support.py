@@ -1,3 +1,4 @@
+#import win32gui as win32gui
 from pykinect2 import PyKinectV2
 from pykinect2 import PyKinectRuntime
 
@@ -60,8 +61,8 @@ class KinectSupport:
         self.key_timers = KeyTimers(self.input_sim)
         self.torso_deka = deque(maxlen=60)
         self.last_hand_pos = (0, 0)
-        self.deka = deque(maxlen=11)
-        for i in range(0, 11):
+        self.deka = deque(maxlen=9)
+        for i in range(0, 9):
             self.deka.append((0,0))
         #self.server_lock = threading.Lock()
 
@@ -237,11 +238,23 @@ class KinectSupport:
         left_hand_to_torso = abs(joint_points[TORSO_JOINT].x - joint_points[LEFT_FOOT_JOINT].x)
         left_hand_x_fix = joint_points[LEFT_HAND_JOINT].x + left_hand_to_torso
 
-        cur_delta = (int(round(left_hand_x_fix - self.last_hand_pos[0])),
-                    int(round(joint_points[LEFT_HAND_JOINT].y - self.last_hand_pos[1])))
+        offset_x = float(left_hand_x_fix - self.last_hand_pos[0]);
+        if math.isinf(offset_x) or math.isnan(offset_x):
+            offset_x = 0
+
+        offset_y = joint_points[LEFT_HAND_JOINT].y - self.last_hand_pos[1]
+        if math.isinf(offset_y) or math.isnan(offset_y):
+            offset_y = 0
+
+        cur_delta = (int(offset_x), int(offset_y))
+
+        avg = [0,0]
+        for i in range(0, 9):
+            avg[0]+=self.deka[i][0]
+            avg[1]+=self.deka[i][1]
 
         if myglobals.enable_kinect_hand:
-            self.input_sim.MouseMove(self.deka[6][0], self.deka[6][1])
+            self.input_sim.MouseMove(int(avg[0]/9), int(avg[1]/9))
 
         self.deka.append(cur_delta)
 
@@ -265,19 +278,18 @@ class KinectSupport:
                 elif event.type == pygame.VIDEORESIZE:
                     self._screen = pygame.display.set_mode(event.dict['size'],
                                                            pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.RESIZABLE, 32)
-
             # --- Game logic should go here
 
             # update input
 
             if self.gallop_tracker.isGalloping():
-                self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.01)
+                self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.1)
 
-            if self.jump_detector.hasJumped():
-                self.key_timers.press_key_for_time(self.input_sim.KEY_JUMP, 0.01)
+            #if self.jump_detector.hasJumped():
+            #    self.key_timers.press_key_for_time(self.input_sim.KEY_JUMP, 0.01)
 
-            if self.crouch_tracker.isCrouching():
-               self.key_timers.press_key_for_time(self.input_sim.KEY_CROUCH, 0.1)
+            #if self.crouch_tracker.isCrouching():
+            #   self.key_timers.press_key_for_time(self.input_sim.KEY_CROUCH, 0.1)
 
             # walking / running
             self.key_timers.update_keys()
@@ -296,38 +308,6 @@ class KinectSupport:
             if self._bodies is not None:
                 self.update_bodies()
 
-            # --- draw skeletons to _frame_surface
-            #if self._bodies is not None:
-            ##    for i in range(0, self._kinect.max_body_count):
-            #        body = self._bodies.bodies[i]
-            ##        if not body:
-            #            continue
-            #
-            #         if not body.is_tracked:
-            #             continue
-            #
-            #         if not body.joints:
-            #             continue
-            #
-            #         joints = body.joints
-            #         # convert joint coordinates to color space
-            #         joint_points = self._kinect.body_joints_to_color_space(joints)
-            #
-            #         self.update_movement_detectors(joints, joint_points)
-            #         self.draw_body(joints, joint_points, SKELETON_COLORS[i])
-            #
-            #         if joints[LEFT_HAND_JOINT].TrackingState == PyKinectV2.TrackingState_NotTracked:
-            #             continue
-            #
-            #         cur_delta = (int(round(joint_points[LEFT_HAND_JOINT].x - last_hand_pos[0])),
-            #                          int(round(joint_points[LEFT_HAND_JOINT].y - last_hand_pos[1])))
-            #
-            #         input_sim.MouseMove(self.deka[3][0], self.deka[3][1])
-            #
-            #         self.deka.append(cur_delta)
-            #
-            #         last_hand_pos = (joint_points[LEFT_HAND_JOINT].x, joint_points[LEFT_HAND_JOINT].y)
-
             # --- copy back buffer surface pixels to the screen, resize it if needed and keep aspect ratio
             # --- (screen size may be different from Kinect's color frame size)
             h_to_w = float(self._frame_surface.get_height()) / self._frame_surface.get_width()
@@ -341,7 +321,7 @@ class KinectSupport:
             pygame.display.flip()
 
             # --- Limit to 60 frames per second
-            self._clock.tick(60)
+            self._clock.tick(100)
 
         # Close our Kinect sensor, close the window and quit.
         self._kinect.close()
