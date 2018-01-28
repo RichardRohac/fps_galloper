@@ -145,6 +145,7 @@ class KinectSupport:
     def update_movement_detectors(self, joints, jointPoints):
         lavaNohaState = joints[LEFT_FOOT_JOINT].TrackingState;
         pravaNohaState = joints[RIGHT_FOOT_JOINT].TrackingState;
+        torsoShouldersState = joints[TORSO_JOINT].TrackingState
         # both joints are not tracked
         if (lavaNohaState == PyKinectV2.TrackingState_NotTracked) or (pravaNohaState == PyKinectV2.TrackingState_NotTracked):
             self.gallop_tracker.failedNoha()
@@ -157,8 +158,12 @@ class KinectSupport:
 
         self.gallop_tracker.addNoha(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
         self.jump_detector.addFeet(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
-        self.crouch_tracker.addBody(jointPoints[TORSO_JOINT].y,
-                                    jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
+
+        if (torsoShouldersState == PyKinectV2.TrackingState_NotTracked) or (torsoShouldersState == PyKinectV2.TrackingState_Inferred):
+            return
+
+        self.crouch_tracker.addBody(joints[TORSO_JOINT].Position.y,
+                                    joints[LEFT_FOOT_JOINT].Position.y, joints[RIGHT_FOOT_JOINT].Position.y)
 
     def find_body(self, bodies):
         if self.current_tracked_body != -1:
