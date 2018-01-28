@@ -1,1 +1,1 @@
-enable_kinect_hand = True
+enable_kinect_hand = False

@@ -1,6 +1,7 @@
 import threading
 from collections import deque
 
+import time
 from aiohttp import web
 import asyncio
 import socketio
@@ -52,11 +53,11 @@ class Server:
         self.sio.on('aimEnable')(self.aimEnable)
         self.sio.on('aimDisable')(self.aimDisable)
         self.prev_delta = deque(maxlen=6)
-        self.prev_delta_pitch = deque(maxlen=6)
+        self.prev_delta_pitch = deque(maxlen=7)
         for i in range(0, 6):
             self.prev_delta.append(0)
 
-        for i in range(0, 6):
+        for i in range(0, 7):
             self.prev_delta_pitch.append(0)
 
         thread = threading.Thread(target=self.run)
@@ -64,10 +65,12 @@ class Server:
         thread.start()
 
     def kf_filter(self, observation, pitch):
-        if myglobals.enable_kinect_hand is True:
+        #print(self.input_manager.GetMousePosAbs())
+
+        if myglobals.enable_kinect_hand is False:
             return
 
-        if abs(pitch) >= 0.6:
+        if abs(pitch) >= 0.60:
             return
 
         # if not self.zero_heading:
@@ -94,17 +97,17 @@ class Server:
             #    print('Delta heading: ' + str(capped_delta))
 
             cur_delta = int(capped_delta)*30
-            cur_delta_pitch = int(capped_delta_pitch) * 20
+            cur_delta_pitch = int(capped_delta_pitch)*10
             self.prev_delta.append(cur_delta)
             self.prev_delta_pitch.append(cur_delta_pitch)
 
             avg = 0
             avg_pitch = 0
-            if len(self.prev_delta_pitch) == 6:
-                for i in range(0, 6):
+            if len(self.prev_delta_pitch) == 7:
+                for i in range(0, 7):
                     avg_pitch += self.prev_delta_pitch[i]
             else:
-                avg_pitch = cur_delta_pitch * 6
+                avg_pitch = cur_delta_pitch * 3
 
             if len(self.prev_delta) == 6:
                 for i in range(0, 6):
@@ -113,12 +116,19 @@ class Server:
 
                 avg = cur_delta * 6
 
-            self.input_manager.MouseMove(int(avg/6), int(avg_pitch / 6))
+            #if abs(pitch) < 2:
+            #    self.input_manager.MouseAbs(self.input_manager.GetMousePosAbs()["x"], 528)
+            #self.prev_delta_pitch.clear()
+            #    self.input_manager.MouseMove(int(avg/6), 0)
+            #else:
+            self.input_manager.MouseMove(-int(avg/6), 0)
         self.cur_heading = pred
         self.cur_pitch = pitch
 
     async def shoot(self, sid, data):
+        #print("shot")
         self.input_manager.PressKey(self.input_manager.KEY_SHOOT)
+        time.sleep(0.1)
         self.input_manager.ReleaseKey(self.input_manager.KEY_SHOOT)
 
     async def acc(self, sid, data):
@@ -130,10 +140,10 @@ class Server:
         self.kf_filter(yaw, pitch)
 
     async def aimEnable(self, aid):
-        myglobals.enable_kinect_hand = False
+        myglobals.enable_kinect_hand = True
 
     async def aimDisable(self, aid):
-        myglobals.enable_kinect_hand = True
+        myglobals.enable_kinect_hand = False
         self.cur_heading = None
         self.cur_pitch = None
         self.prev_delta.clear()

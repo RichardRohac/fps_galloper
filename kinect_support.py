@@ -256,7 +256,9 @@ class KinectSupport:
             avg[1]+=self.deka[i][1]
 
         if myglobals.enable_kinect_hand:
-            self.input_sim.MouseMove(int(avg[0]/9), int(avg[1]/9))
+            self.input_sim.MouseMove(0, int(avg[1]/9))
+        #else:
+        #    self.input_sim.MouseMove(0, int(avg[1] / 9))
 
         self.deka.append(cur_delta)
 

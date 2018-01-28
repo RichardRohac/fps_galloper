@@ -1,5 +1,6 @@
 import ctypes
 import time
+from _ctypes import byref
 
 SendInput = ctypes.windll.user32.SendInput
 
@@ -33,6 +34,9 @@ class Input(ctypes.Structure):
     _fields_ = [("type", ctypes.c_ulong),
                 ("ii", Input_I)]
 
+class POINT(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
 class InputSimulator:
     KEY_FORWARD = 0x11
     KEY_SHOOT = 0x1C
@@ -59,3 +63,15 @@ class InputSimulator:
         ii_.mi = MouseInput(dx, dy, 0, 0x0001, 0, ctypes.pointer(extra))
         x = Input(ctypes.c_ulong(0), ii_)
         ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+    def MouseAbs(self, dx, dy):
+        extra = ctypes.c_ulong(0)
+        ii_ = Input_I()
+        ii_.mi = MouseInput(dx, dy, 0, 0x0001|0x8000, 0, ctypes.pointer(extra))
+        x = Input(ctypes.c_ulong(0), ii_)
+        ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+    def GetMousePosAbs(self):
+        pt = POINT()
+        ctypes.windll.user32.GetCursorPos(byref(pt))
+        return {"x": pt.x, "y": pt.y}
