@@ -185,7 +185,9 @@ class KinectSupport:
         closest_z = float("inf")
         closest_body = None
         self.gallop_tracker.reset()
-        #self.crouch_tracker.reset()
+        self.crouch_tracker.reset()
+        self.jump_detector.reset()
+
 
         for i in range(0, self._kinect.max_body_count):
             body = bodies[i]
