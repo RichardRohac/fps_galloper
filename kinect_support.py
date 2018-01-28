@@ -8,8 +8,12 @@ from GallopTracker import GallopTracker
 from input_simulator import InputSimulator
 from collections import deque
 import math
+import threading
 
 from key_timers import KeyTimers
+from server import Server
+
+import myglobals
 
 LEFT_FOOT_JOINT = PyKinectV2.JointType_AnkleLeft
 RIGHT_FOOT_JOINT = PyKinectV2.JointType_AnkleRight
@@ -55,6 +59,7 @@ class KinectSupport:
         self.deka = deque(maxlen=11)
         for i in range(0, 11):
             self.deka.append((0,0))
+        #self.server_lock = threading.Lock()
 
     def draw_body_bone(self, joints, jointPoints, color, joint0, joint1):
         joint0State = joints[joint0].TrackingState;
@@ -224,9 +229,10 @@ class KinectSupport:
         left_hand_x_fix = joint_points[LEFT_HAND_JOINT].x + left_hand_to_torso
 
         cur_delta = (int(round(left_hand_x_fix - self.last_hand_pos[0])),
-                     int(round(joint_points[LEFT_HAND_JOINT].y - self.last_hand_pos[1])))
+                    int(round(joint_points[LEFT_HAND_JOINT].y - self.last_hand_pos[1])))
 
-        self.input_sim.MouseMove(self.deka[6][0], self.deka[6][1])
+        if myglobals.enable_kinect_hand:
+            self.input_sim.MouseMove(self.deka[6][0], self.deka[6][1])
 
         self.deka.append(cur_delta)
 
@@ -324,6 +330,7 @@ class KinectSupport:
         pygame.quit()
 
 def main():
+    server = Server(InputSimulator())
 
     kinect_visualiser = KinectSupport()
     kinect_visualiser.run()

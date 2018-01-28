@@ -1,8 +1,12 @@
+import threading
+
 from aiohttp import web
+import asyncio
 import socketio
 import math
 from input_simulator import InputSimulator
 DEG_TO_RAD = math.pi/180
+import myglobals
 
 class KalmanFilter(object):
 
@@ -42,13 +46,20 @@ class Server:
         self.sio.on('shoot')(self.shoot)
         self.sio.on('acc')(self.acc)
         self.sio.on('heading')(self.heading)
+        self.sio.on('aimEnable')(self.aimEnable)
+        self.sio.on('aimDisable')(self.aimDisable)
+
+        thread = threading.Thread(target=self.run)
+        thread.daemon = True
+        thread.start()
 
     def kf_filter(self, observation):
         self.kf.input_latest_noisy_measurement(observation)
         if self.cur_heading:
             delta = math.asin(math.sin(observation*DEG_TO_RAD)*math.cos(self.cur_heading*DEG_TO_RAD)-math.cos(observation*DEG_TO_RAD)*math.sin(self.cur_heading*DEG_TO_RAD))
             capped_delta = delta * (180/math.pi)
-            self.input_manager.MouseMove(int(capped_delta)*10, 0)
+            if myglobals.enable_kinect_hand is False:
+                self.input_manager.MouseMove(int(capped_delta)*10, 0)
 
         self.cur_heading = observation
 
@@ -70,11 +81,13 @@ class Server:
         h = float(data)
         self.logdata(h)
 
+    async def aimEnable(self, aid):
+        myglobals.enable_kinect_hand = False
+
+    async def aimDisable(self, aid):
+        myglobals.enable_kinect_hand = True
+
     def run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         web.run_app(self.app)
-
-
-if __name__ == '__main__':
-    server = Server(InputSimulator())
-    server.run()
-

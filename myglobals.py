@@ -1,0 +1,1 @@
+enable_kinect_hand = True
