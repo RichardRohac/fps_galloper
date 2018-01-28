@@ -289,8 +289,8 @@ class KinectSupport:
             elif self.gallop_tracker.isGalloping():
                 self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.1)
 
-            if self.crouch_tracker.isCrouching():
-               self.key_timers.press_key_for_time(self.input_sim.KEY_CROUCH, 0.1)
+            #if self.crouch_tracker.isCrouching():
+            #   self.key_timers.press_key_for_time(self.input_sim.KEY_CROUCH, 0.1)
 
             # walking / running
             self.key_timers.update_keys()

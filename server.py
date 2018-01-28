@@ -43,6 +43,7 @@ class Server:
         self.kf = KalmanFilter(process_variance, estimated_measurement_variance)
         self.input_manager = _input_manager
         self.cur_heading = None
+        self.cur_pitch = None
         self.zero_heading = None
 
         self.sio.on('shoot')(self.shoot)
@@ -51,15 +52,22 @@ class Server:
         self.sio.on('aimEnable')(self.aimEnable)
         self.sio.on('aimDisable')(self.aimDisable)
         self.prev_delta = deque(maxlen=6)
+        self.prev_delta_pitch = deque(maxlen=6)
         for i in range(0, 6):
             self.prev_delta.append(0)
+
+        for i in range(0, 6):
+            self.prev_delta_pitch.append(0)
 
         thread = threading.Thread(target=self.run)
         thread.daemon = True
         thread.start()
 
-    def kf_filter(self, observation):
+    def kf_filter(self, observation, pitch):
         if myglobals.enable_kinect_hand is True:
+            return
+
+        if abs(pitch) >= 0.6:
             return
 
         # if not self.zero_heading:
@@ -76,31 +84,38 @@ class Server:
 
         #self.kf.input_latest_noisy_measurement(observation)
         pred = observation #self.kf.get_latest_estimated_measurement()
-        if self.cur_heading:
+        if self.cur_heading and self.cur_pitch:
             delta = math.asin(math.sin(pred*DEG_TO_RAD)*math.cos(self.cur_heading*DEG_TO_RAD)-math.cos(pred*DEG_TO_RAD)*math.sin(self.cur_heading*DEG_TO_RAD))
+            delta_pitch = math.asin(math.sin(pitch)*math.cos(self.cur_pitch)-math.cos(pitch)*math.sin(self.cur_pitch))
+
+            capped_delta_pitch = delta_pitch * (180 / math.pi)
             capped_delta = delta * (180/math.pi)
             #if abs(capped_delta) > 1:
             #    print('Delta heading: ' + str(capped_delta))
 
             cur_delta = int(capped_delta)*30
+            cur_delta_pitch = int(capped_delta_pitch) * 20
             self.prev_delta.append(cur_delta)
+            self.prev_delta_pitch.append(cur_delta_pitch)
 
             avg = 0
+            avg_pitch = 0
+            if len(self.prev_delta_pitch) == 6:
+                for i in range(0, 6):
+                    avg_pitch += self.prev_delta_pitch[i]
+            else:
+                avg_pitch = cur_delta_pitch * 6
+
             if len(self.prev_delta) == 6:
                 for i in range(0, 6):
                     avg += self.prev_delta[i]
             else:
+
                 avg = cur_delta * 6
 
-            self.input_manager.MouseMove(int(avg/6), 0)
+            self.input_manager.MouseMove(int(avg/6), int(avg_pitch / 6))
         self.cur_heading = pred
-
-    def logdata(self, acc):
-        if len(self.measurements) < 10:
-            self.measurements.append(acc)
-        else:
-            self.measurements.append(acc)
-            self.kf_filter(acc)
+        self.cur_pitch = pitch
 
     async def shoot(self, sid, data):
         self.input_manager.PressKey(self.input_manager.KEY_SHOOT)
@@ -110,12 +125,9 @@ class Server:
         self.logdata(float(data))
 
     async def heading(self, sid, data):
-        h = float(data)
-        self.logdata(h)
-
-    async def pitch(self, sid, data):
-        h = float(data)
-        #self.
+        yaw = float(data.split(',')[0])
+        pitch = float(data.split(',')[1])
+        self.kf_filter(yaw, pitch)
 
     async def aimEnable(self, aid):
         myglobals.enable_kinect_hand = False
@@ -123,7 +135,9 @@ class Server:
     async def aimDisable(self, aid):
         myglobals.enable_kinect_hand = True
         self.cur_heading = None
+        self.cur_pitch = None
         self.prev_delta.clear()
+        self.prev_delta_pitch.clear()
 
     def run(self):
         loop = asyncio.new_event_loop()
