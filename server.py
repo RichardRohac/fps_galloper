@@ -43,6 +43,7 @@ class Server:
         self.kf = KalmanFilter(process_variance, estimated_measurement_variance)
         self.input_manager = _input_manager
         self.cur_heading = None
+        self.zero_heading = None
 
         self.sio.on('shoot')(self.shoot)
         self.sio.on('acc')(self.acc)
@@ -61,6 +62,18 @@ class Server:
         if myglobals.enable_kinect_hand is True:
             return
 
+        # if not self.zero_heading:
+        #     self.zero_heading = observation
+        # else:
+        #     delta = math.asin(math.sin(observation*DEG_TO_RAD)*math.cos(self.zero_heading*DEG_TO_RAD) - math.cos(observation*DEG_TO_RAD)*math.sin(self.zero_heading*DEG_TO_RAD))
+        #     delta = delta * (180 / math.pi)
+        #     print(delta)
+        #     if delta > 15:
+        #         self.input_manager.MouseMove(5, 0)
+        #     elif delta < -15:
+        #         self.input_manager.MouseMove(-5, 0)
+
+
         #self.kf.input_latest_noisy_measurement(observation)
         pred = observation #self.kf.get_latest_estimated_measurement()
         if self.cur_heading:
@@ -73,8 +86,11 @@ class Server:
             self.prev_delta.append(cur_delta)
 
             avg = 0
-            for i in range(0, 6):
-                avg += self.prev_delta[i]
+            if len(self.prev_delta) == 6:
+                for i in range(0, 6):
+                    avg += self.prev_delta[i]
+            else:
+                avg = cur_delta * 6
 
             self.input_manager.MouseMove(int(avg/6), 0)
         self.cur_heading = pred
@@ -97,12 +113,17 @@ class Server:
         h = float(data)
         self.logdata(h)
 
+    async def pitch(self, sid, data):
+        h = float(data)
+        #self.
+
     async def aimEnable(self, aid):
         myglobals.enable_kinect_hand = False
 
     async def aimDisable(self, aid):
         myglobals.enable_kinect_hand = True
-        #self.cur_heading = None
+        self.cur_heading = None
+        self.prev_delta.clear()
 
     def run(self):
         loop = asyncio.new_event_loop()
