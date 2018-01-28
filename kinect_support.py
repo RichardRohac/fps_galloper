@@ -5,6 +5,7 @@ import ctypes
 import pygame
 import sys
 from GallopTracker import GallopTracker
+from JumpDetector import JumpDetector
 from input_simulator import InputSimulator
 from collections import deque
 import math
@@ -39,6 +40,7 @@ class KinectSupport:
     def __init__(self):
         pygame.init()
         self.gallop_tracker = GallopTracker()
+        self.jump = JumpDetector()
         self._clock = pygame.time.Clock()
 
         self._infoObject = pygame.display.Info()
@@ -150,6 +152,7 @@ class KinectSupport:
             self.gallop_tracker.failedNoha()
             return
         self.gallop_tracker.addNoha(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
+        self.jump.addFeet(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
 
     def find_body(self, bodies):
         if self.current_tracked_body != -1:
@@ -244,6 +247,8 @@ class KinectSupport:
         self.draw_body(closest_body.joints, joint_points, SKELETON_COLORS[self.current_tracked_body])
 
     def run(self):
+        self.jump.activate()
+
         while not self._done:
             # --- Main event loop
             for event in pygame.event.get():
@@ -260,6 +265,9 @@ class KinectSupport:
 
             if self.gallop_tracker.isGalloping():
                 self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.01)
+
+            if self.jump.hasJumped():
+                self.key_timers.press_key_for_time(self.input_sim.KEY_JUMP, 0.01)
 
             # walking / running
             self.key_timers.update_keys()
