@@ -6,6 +6,7 @@ import pygame
 import sys
 from GallopTracker import GallopTracker
 from JumpDetector import JumpDetector
+from CrouchTracker import CrouchTracker
 from input_simulator import InputSimulator
 from collections import deque
 import math
@@ -40,7 +41,8 @@ class KinectSupport:
     def __init__(self):
         pygame.init()
         self.gallop_tracker = GallopTracker()
-        self.jump = JumpDetector()
+        self.jump_detector = JumpDetector()
+        self.crouch_tracker = CrouchTracker()
         self._clock = pygame.time.Clock()
 
         self._infoObject = pygame.display.Info()
@@ -139,7 +141,7 @@ class KinectSupport:
         del address
         target_surface.unlock()
 
-    def update_galloper(self, joints, jointPoints):
+    def update_movement_detectors(self, joints, jointPoints):
         lavaNohaState = joints[LEFT_FOOT_JOINT].TrackingState;
         pravaNohaState = joints[RIGHT_FOOT_JOINT].TrackingState;
         # both joints are not tracked
@@ -151,8 +153,11 @@ class KinectSupport:
         if (lavaNohaState == PyKinectV2.TrackingState_Inferred) and (pravaNohaState == PyKinectV2.TrackingState_Inferred):
             self.gallop_tracker.failedNoha()
             return
+
         self.gallop_tracker.addNoha(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
-        self.jump.addFeet(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
+        self.jump_detector.addFeet(jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
+        self.crouch_tracker.addBody(jointPoints[TORSO_JOINT].y,
+                                    jointPoints[LEFT_FOOT_JOINT].y, jointPoints[RIGHT_FOOT_JOINT].y)
 
     def find_body(self, bodies):
         if self.current_tracked_body != -1:
@@ -179,6 +184,7 @@ class KinectSupport:
         closest_z = float("inf")
         closest_body = None
         self.gallop_tracker.reset()
+        #self.crouch_tracker.reset()
 
         for i in range(0, self._kinect.max_body_count):
             body = bodies[i]
@@ -242,12 +248,13 @@ class KinectSupport:
         self.last_hand_pos = (left_hand_x_fix, joint_points[LEFT_HAND_JOINT].y)
         # special_movements(body)
 
-        self.update_galloper(closest_body.joints, joint_points)
+        self.update_movement_detectors(closest_body.joints, joint_points)
 
         self.draw_body(closest_body.joints, joint_points, SKELETON_COLORS[self.current_tracked_body])
 
     def run(self):
-        self.jump.activate()
+        self.jump_detector.activate()
+        self.crouch_tracker.activate()
 
         while not self._done:
             # --- Main event loop
@@ -266,8 +273,11 @@ class KinectSupport:
             if self.gallop_tracker.isGalloping():
                 self.key_timers.press_key_for_time(self.input_sim.KEY_FORWARD, 0.01)
 
-            if self.jump.hasJumped():
+            if self.jump_detector.hasJumped():
                 self.key_timers.press_key_for_time(self.input_sim.KEY_JUMP, 0.01)
+
+            if self.crouch_tracker.isCrouching():
+               self.key_timers.press_key_for_time(self.input_sim.KEY_CROUCH, 0.1)
 
             # walking / running
             self.key_timers.update_keys()
@@ -303,7 +313,7 @@ class KinectSupport:
             #         # convert joint coordinates to color space
             #         joint_points = self._kinect.body_joints_to_color_space(joints)
             #
-            #         self.update_galloper(joints, joint_points)
+            #         self.update_movement_detectors(joints, joint_points)
             #         self.draw_body(joints, joint_points, SKELETON_COLORS[i])
             #
             #         if joints[LEFT_HAND_JOINT].TrackingState == PyKinectV2.TrackingState_NotTracked:
