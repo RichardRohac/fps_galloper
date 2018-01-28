@@ -17,7 +17,7 @@ class GallopTracker(object):
     def isGalloping(self):
         if not len(self.window):
             return False
-        left_down =  self.window[0] > 0
+        left_down = self.window[0] > 0
         num_changes = 0
         for d in self.window:
             if left_down and d < -PIXEL_THRESHOLD:

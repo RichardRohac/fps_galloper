@@ -18,7 +18,14 @@ class JumpDetector(object):
     def deactivate(self):
         self.enabled = False
 
+    def reset(self):
+      self.window = deque(maxlen=WINDOW_SIZE)
+      self.jump = False
+      self.checked = False
+
     def addFeet(self, y_left, y_right):
+        if not self.enabled:
+            return
         self.window.append(max(y_left, y_right))
         self.jump = self.enabled and (self.window[0] - self.window[-1] > PIXEL_THRESHOLD)
         if not self.jump:

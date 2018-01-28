@@ -22,11 +22,13 @@ class CrouchTracker(object):
         self.crouched = False
 
     def addBody(self, shoulders_y, left_foot_y, right_foot_y):
+        if not self.enabled:
+            return
         self.window.append(max(left_foot_y, right_foot_y) - shoulders_y)
         delta = self.window[-1] - self.window[max(FRAMES_LOOKBACK, -len(self.window))]
         if self.crouched and delta > PIXEL_THRESHOLD:
             self.crouched = False
-        elif delta < -PIXEL_THRESHOLD:
+        elif not self.crouched and delta < -PIXEL_THRESHOLD:
             self.crouched = True
 
     def failedBody(self):
